@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        a {
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: rgb(10, 10, 17);
+        }
+        
+        input {
+            outline: none;
+            border: none;
+        }
+        
+        .form {
+            margin: auto;
+            width: 500px;
+            text-align: center;
+        }
+        
+        .book {
+            border-bottom: 1px solid rgb(194, 137, 33);
+        }
+        
+        .book h1 {
+            margin: auto;
+            margin-bottom: 8px;
+        }
+        
+        .book div {
+            height: 35px;
+            line-height: 35px;
+            /* padding-left: 15px; */
+            background: orange;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        td {
+            border: 1px dashed orange;
+            height: 35px;
+            line-height: 35px;
+        }
+        
+        thead {
+            background: orange;
+        }
+        
+        thead th {
+            height: 30px;
+            line-height: 30px;
+        }
+        
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="form">
+            <div class="book">
+                <h1>图书管理</h1>
+                <div>
+                    <label for="id">编号:</label>
+                    <input type="text" id="id" v-model='id' v-bind:disabled='flag' v-focus>
+                    <label for="name">书名:</label>
+                    <input type="text" id="name" v-model='name'>
+                    <button @click='handle' v-bind:disabled='nameFlag'>提交</button>
+                </div>
+                <div>
+                    <span>图书总数:</span>
+                    <span>{{total}}</span>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>名称</th>
+                        <th>时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody :key='item.id' v-for='item in books' v-cloak>
+                    <tr>
+                        <td>{{item.id}}</td>
+                        <td>{{item.name}}</td>
+                        <td>{{item.data}}</td>
+                        <td>
+                            <a href="#" @click.prevent='modify(item)'>修改</a>
+                            <span>|</span>
+                            <a href="#" @click.prevent='remove(item)'>删除</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="../js/vue.js"></script>
+    <script>
+        // 过滤器:filter(格式化日期)
+        // 自定义指令:focus(表单自动获取焦点)
+        // 计算属性:computed(统计图书数量)
+        // 侦听器:watch(验证图书名是否存在)
+        // 生命周期:mounted(图书数据处理)
+        Vue.directive('focus', {
+            inserted: function(el) {
+                el.focus();
+            }
+        });
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                flag: false,
+                nameFlag: false,
+                id: '',
+                name: '',
+                books: []
+            },
+            methods: {
+                handle: function() {
+                    var that = this;
+                    var panduan = true;
+                    // 判断id是否存在 也可以使用侦听器的方法，具体用法如判断书名的操作
+                    // 判断id是否存在 方法一
+                    // for (item in this.books) {
+                    //     if (that.id == this.books[item].id) {
+                    //         panduan = false;
+                    //     }
+                    // }
+
+                    //判断id是否存在 方法二
+                    this.books.some((item) => {
+                        if (item.id == this.id) {
+                            panduan = false;
+                        }
+                    });
+                    if (this.id == '' || this.name == '') {
+                        alert('id或者name为空');
+                        return;
+                    } else if (this.flag == true) {
+                        this.books.some((item) => {
+                            if (item.id == this.id) {
+                                item.name = this.name;
+                                return true;
+                            }
+                        });
+                        this.flag = false;
+                    } else if (panduan == false) {
+                        alert('此id已经存在');
+                        return;
+                    } else {
+                        var date = new Date();
+                        var year = date.getFullYear();
+                        var month = date.getMonth() + 1;
+                        var day = date.getDate();
+                        var book = {};
+                        book.id = this.id;
+                        book.name = this.name;
+                        book.data = year + '-' + month + '-' + day;
+                        this.books.push(book);
+                    }
+                    this.id = '';
+                    this.name = '';
+                },
+                modify: function(item) {
+                    this.flag = true;
+                    this.id = item.id;
+                    this.name = item.name;
+                },
+                remove: function(item) {
+                    // 方法1
+                    var index = this.books.indexOf(item);
+                    this.books.splice(index, 1);
+
+                    // 方法2
+                    // var that = item;
+                    // var index = this.books.findIndex(function(item) {
+                    //     return item.id == that.id;
+                    // });
+                    // this.books.splice(index, 1);
+
+                    //方法3
+                    // var that = item;
+                    // this.books = this.books.filter(function(item) {
+                    //     return item.id != that.id;
+                    // });
+                }
+            },
+            computed: {
+                total: function() {
+                    return this.books.length;
+                }
+            },
+            // 侦听器的方法判断书名是否存在
+            watch: {
+                name: function(value) {
+                    var flag = this.books.some(function(item) {
+                        return item.name == value;
+                    });
+                    if (flag) {
+                        this.nameFlag = true;
+                    } else {
+                        this.nameFlag = false;
+                    }
+                }
+            },
+            mounted: function() {
+                // 该生命周期钩子函数被触发的时候，模板已经可以使用了
+                // 一般此时用于获取后台数据,然后把数据填充到模板
+                var data = [{
+                    id: 1,
+                    name: '数学书',
+                    data: '2000-11-13'
+                }, {
+                    id: 2,
+                    name: '语文书',
+                    data: '2000-11-13'
+                }, {
+                    id: 3,
+                    name: '英语书',
+                    data: '2000-11-13'
+                }];
+                this.books = data;
+            }
+        });
+    </script>
+</body>
+
+</html>
